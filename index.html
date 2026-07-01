@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIGHTSHIFT — Reel Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0E;
+    --bg-panel:#121216;
+    --bg-panel-2:#16161c;
+    --line:#26262e;
+    --pink:#FF2E92;
+    --cyan:#2EE6FF;
+    --text:#EDEDF2;
+    --text-dim:#8A8A96;
+    --text-dimmer:#55555f;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  body{
+    background-image:
+      radial-gradient(ellipse 800px 400px at 15% -10%, rgba(255,46,146,0.10), transparent),
+      radial-gradient(ellipse 800px 500px at 100% 10%, rgba(46,230,255,0.08), transparent);
+    background-attachment:fixed;
+  }
+  ::selection{ background:var(--pink); color:#0B0B0E; }
+
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:1; opacity:0.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  header{
+    padding:28px clamp(20px,5vw,64px) 20px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    position:relative; z-index:2;
+  }
+  .logo{
+    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:22px; letter-spacing:0.04em;
+    display:flex; align-items:center; gap:10px;
+  }
+  .logo .dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--pink); box-shadow:0 0 12px var(--pink), 0 0 24px var(--pink);
+    animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .tagline{ font-size:12px; color:var(--text-dim); letter-spacing:0.08em; text-transform:uppercase; }
+
+  main{
+    max-width:1180px; margin:0 auto; padding:clamp(28px,5vw,56px) clamp(20px,5vw,64px) 80px;
+    position:relative; z-index:2;
+  }
+
+  .hero{ margin-bottom:40px; }
+  .hero h1{
+    font-family:'Rajdhani',sans-serif; font-weight:700;
+    font-size:clamp(32px,5.5vw,56px); line-height:0.98; letter-spacing:-0.01em;
+    text-transform:uppercase;
+  }
+  .hero h1 span{
+    background:linear-gradient(90deg, var(--pink), var(--cyan));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p{
+    margin-top:14px; color:var(--text-dim); font-size:15px; max-width:520px; line-height:1.55;
+  }
+
+  .grid{
+    display:grid; grid-template-columns:380px 1fr; gap:24px;
+  }
+  @media (max-width:860px){ .grid{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:24px;
+  }
+
+  .field{ margin-bottom:20px; }
+  .field:last-of-type{ margin-bottom:0; }
+  label{
+    display:block; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--text-dim); margin-bottom:9px;
+  }
+  input[type=text], select, textarea{
+    width:100%; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:11px 13px; color:var(--text); font-family:'Inter',sans-serif; font-size:14px;
+    transition:border-color 0.15s, box-shadow 0.15s;
+  }
+  input[type=text]:focus, select:focus, textarea:focus{
+    outline:none; border-color:var(--cyan); box-shadow:0 0 0 3px rgba(46,230,255,0.12);
+  }
+  textarea{ resize:vertical; min-height:64px; }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    padding:7px 13px; border-radius:999px; border:1px solid var(--line); background:var(--bg-panel-2);
+    color:var(--text-dim); font-size:12.5px; cursor:pointer; transition:all 0.15s; user-select:none;
+  }
+  .chip:hover{ border-color:var(--text-dimmer); color:var(--text); }
+  .chip.active{
+    background:rgba(255,46,146,0.12); border-color:var(--pink); color:var(--pink);
+  }
+
+  .generate-btn{
+    margin-top:24px; width:100%; padding:14px; border:none; border-radius:9px; cursor:pointer;
+    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:16px; letter-spacing:0.06em; text-transform:uppercase;
+    background:linear-gradient(90deg, var(--pink), #ff5fa8);
+    color:#fff;
+    box-shadow:0 4px 20px rgba(255,46,146,0.25);
+    transition:transform 0.12s, box-shadow 0.12s;
+  }
+  .generate-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 26px rgba(255,46,146,0.35); }
+  .generate-btn:active{ transform:translateY(0px); }
+  .generate-btn:disabled{ opacity:0.6; cursor:wait; }
+
+  .output-area{ display:flex; flex-direction:column; gap:18px; }
+
+  .placeholder{
+    border:1px dashed var(--line); border-radius:14px; padding:60px 30px; text-align:center;
+    color:var(--text-dimmer); display:flex; flex-direction:column; align-items:center; gap:14px;
+    min-height:400px; justify-content:center;
+  }
+  .gauge{
+    width:64px; height:64px; border-radius:50%; border:3px solid var(--line);
+    border-top-color:var(--pink); border-right-color:var(--cyan);
+    display:none;
+  }
+  .gauge.spin{ display:block; animation:spin 0.8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:22px 24px;
+    position:relative; overflow:hidden;
+  }
+  .card::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--pink), var(--cyan));
+  }
+  .card-head{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
+  }
+  .card-title{
+    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:13px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--cyan);
+  }
+  .copy-btn{
+    background:none; border:1px solid var(--line); color:var(--text-dim); font-size:11px;
+    padding:5px 11px; border-radius:6px; cursor:pointer; font-family:'Inter',sans-serif;
+    letter-spacing:0.04em; transition:all 0.15s;
+  }
+  .copy-btn:hover{ border-color:var(--cyan); color:var(--cyan); }
+  .copy-btn.copied{ border-color:var(--pink); color:var(--pink); }
+
+  .caption-text{ font-size:15px; line-height:1.6; color:var(--text); white-space:pre-wrap; }
+
+  .hashtag-list{ display:flex; flex-wrap:wrap; gap:8px; font-family:'JetBrains Mono',monospace; }
+  .hashtag-list span{
+    font-size:12.5px; color:var(--cyan); background:rgba(46,230,255,0.08);
+    padding:5px 10px; border-radius:6px;
+  }
+
+  .shotlist{ list-style:none; counter-reset:shot; }
+  .shotlist li{
+    counter-increment:shot; padding:12px 0 12px 38px; position:relative;
+    border-bottom:1px solid var(--line); font-size:14px; line-height:1.5;
+  }
+  .shotlist li:last-child{ border-bottom:none; padding-bottom:0; }
+  .shotlist li:first-child{ padding-top:0; }
+  .shotlist li::before{
+    content:counter(shot); position:absolute; left:0; top:11px;
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--pink);
+    width:24px; height:24px; border:1px solid var(--pink); border-radius:5px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .shotlist li:first-child::before{ top:0; }
+  .shot-timer{ color:var(--text-dim); font-size:12px; font-family:'JetBrains Mono',monospace; }
+
+  .sound-tag{
+    display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim);
+  }
+  .sound-tag b{ color:var(--text); font-weight:600; }
+
+  footer{
+    text-align:center; padding:26px; color:var(--text-dimmer); font-size:11.5px;
+    border-top:1px solid var(--line); position:relative; z-index:2;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header>
+  <div class="logo"><span class="dot"></span>NIGHTSHIFT</div>
+  <div class="tagline">Reel Prep Console</div>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Plan the edit<br><span>before you shoot it.</span></h1>
+    <p>Describe the car, the vibe, the location. Get a caption, a hashtag set, and a shot list built for how car-edit Reels actually perform — back in your hands in seconds.</p>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="field">
+        <label for="car">Car</label>
+        <input type="text" id="car" placeholder="e.g. R34 Skyline, BMW E46, RX-7" value="R34 Skyline">
+      </div>
+
+      <div class="field">
+        <label for="location">Location / setting</label>
+        <input type="text" id="location" placeholder="e.g. empty parking garage, coastal highway" value="empty parking garage">
+      </div>
+
+      <div class="field">
+        <label>Vibe</label>
+        <div class="chip-row" id="vibeChips">
+          <div class="chip active" data-val="Night drive">Night drive</div>
+          <div class="chip" data-val="Aggressive / rev">Aggressive / rev</div>
+          <div class="chip" data-val="Clean showcase">Clean showcase</div>
+          <div class="chip" data-val="Drift / action">Drift / action</div>
+          <div class="chip" data-val="Sunset cruise">Sunset cruise</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Genre lean</label>
+        <div class="chip-row" id="genreChips">
+          <div class="chip active" data-val="Phonk">Phonk</div>
+          <div class="chip" data-val="Brazilian funk">Brazilian funk</div>
+          <div class="chip" data-val="Drift phonk">Drift phonk</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="notes">Anything else? (optional)</label>
+        <textarea id="notes" placeholder="e.g. has neon underglow, just got new wheels, raining"></textarea>
+      </div>
+
+      <button class="generate-btn" id="genBtn" onclick="generate()">Generate</button>
+    </div>
+
+    <div class="output-area" id="output">
+      <div class="placeholder" id="placeholder">
+        <div class="gauge" id="gauge"></div>
+        <div id="placeholderText">Fill in the details and hit generate.<br>Your caption, hashtags, and shot list show up here.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>Built for car-edit creators. Everything generates locally — nothing is saved or sent anywhere.</footer>
+
+<script>
+const vibeChips = document.getElementById('vibeChips');
+const genreChips = document.getElementById('genreChips');
+
+function setupChips(container){
+  container.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if(!chip) return;
+    [...container.children].forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+}
+setupChips(vibeChips);
+setupChips(genreChips);
+
+function getActive(container){
+  return container.querySelector('.chip.active').dataset.val;
+}
+
+// --- Content generation logic ---
+
+const captionTemplates = {
+  "Night drive": [
+    "{car} doesn't need headlights to find trouble. {location}, lights off, engine on.",
+    "City's asleep. {car} isn't. {location} hits different at 2am.",
+    "Some nights the {car} just wants to drive. No destination. {location} → wherever."
+  ],
+  "Aggressive / rev": [
+    "{car} stopped asking nicely. {location}, full send.",
+    "That sound from the {car} should be illegal. {location} just found out.",
+    "Redline therapy. {car} at {location}, no apologies."
+  ],
+  "Clean showcase": [
+    "{car}. {location}. Nothing else needed.",
+    "Every angle of the {car} hits at {location}. Look closer.",
+    "This is what patience looks like — {car} detailed, lit, and parked at {location}."
+  ],
+  "Drift / action": [
+    "{car} sideways through {location} and not a single regret.",
+    "Tires gave up before the driver did. {car} at {location}.",
+    "Smoke first, questions later. {car} owning {location}."
+  ],
+  "Sunset cruise": [
+    "Golden hour was made for cars like this. {car}, {location}.",
+    "Last light, {car}, {location}. No caption needed but here's one anyway.",
+    "{car} chasing the sunset through {location}. Worth the drive."
+  ]
+};
+
+const hashtagBank = {
+  base: ["#carsofinstagram", "#carculture", "#carcommunity", "#carspotting", "#automotive"],
+  "Phonk": ["#phonk", "#phonkmusic", "#driftphonk", "#carphonk", "#phonkedit"],
+  "Brazilian funk": ["#funkbr", "#brazilianfunk", "#funkcaredit", "#funk", "#funkmusic"],
+  "Drift phonk": ["#driftphonk", "#phonk", "#driftedit", "#carphonk", "#sidewayssociety"],
+  "Night drive": ["#nightdrive", "#jdmnights", "#streetracing", "#carsatnight", "#nightcrawler"],
+  "Aggressive / rev": ["#revlimiter", "#exhaustsound", "#carrev", "#turbosound", "#carsounds"],
+  "Clean showcase": ["#carshowcase", "#cardetailing", "#carphotography", "#showcar", "#carshoot"],
+  "Drift / action": ["#drifting", "#driftcar", "#sideways", "#driftedit", "#tandemdrift"],
+  "Sunset cruise": ["#goldenhour", "#sunsetdrive", "#cruisenight", "#carsunset", "#caredit"]
+};
+
+const shotTemplates = {
+  "Night drive": [
+    { title: "Cold open — headlight flicker", desc: "Close-up on the headlights switching on in darkness. Hold 1 sec on black before reveal.", timer: "0:00–0:02" },
+    { title: "Low angle rolling shot", desc: "Camera low, near ground level, car rolls past slowly. Let the engine note carry the audio.", timer: "0:02–0:05" },
+    { title: "Interior — dash glow", desc: "Quick cut to dash lights / gauge cluster, driver's hand on wheel, mostly silhouette.", timer: "0:05–0:07" },
+    { title: "Wide establishing shot", desc: "Car parked or moving through {location}, full body visible, let it breathe.", timer: "0:07–0:11" },
+    { title: "Beat-drop hero shot", desc: "Your best angle — slow motion or quick zoom — timed exactly to the beat drop in the track.", timer: "0:11–0:14" },
+    { title: "Exit / fade", desc: "Taillights pulling away, fade to black or hard cut to end card.", timer: "0:14–0:16" }
+  ],
+  "Aggressive / rev": [
+    { title: "Cold open — exhaust tip close-up", desc: "Tight shot on the exhaust, silent for half a second before the rev hits.", timer: "0:00–0:01" },
+    { title: "Rev shot, static camera", desc: "Locked-off wide shot, car revs in place. Let the raw sound dominate, no music yet.", timer: "0:01–0:04" },
+    { title: "Quick cut barrage", desc: "3-4 fast cuts: wheel, badge, interior tach needle climbing, driver's foot on pedal.", timer: "0:04–0:07" },
+    { title: "Launch / takeoff", desc: "Car launches from standstill, camera shake optional for impact, this is your hook moment.", timer: "0:07–0:10" },
+    { title: "Tracking shot at {location}", desc: "Side tracking shot as the car accelerates past, music kicks in fully here.", timer: "0:10–0:14" },
+    { title: "Final hero frame", desc: "Hold on the car at rest, engine ticking, hard cut to black or logo.", timer: "0:14–0:16" }
+  ],
+  "Clean showcase": [
+    { title: "Detail close-up — badge or wheel", desc: "Macro-style shot on a signature detail of the {car}, shallow depth of field if possible.", timer: "0:00–0:02" },
+    { title: "Slow pan along body line", desc: "Camera glides along the side of the car, following the body line from front to rear.", timer: "0:02–0:06" },
+    { title: "Front 3/4 hero angle", desc: "The angle that sells the car best — usually front 3/4. Hold for a beat.", timer: "0:06–0:09" },
+    { title: "Interior reveal", desc: "Door opens, quick shot of seats/interior, then cut.", timer: "0:09–0:11" },
+    { title: "Wide shot at {location}", desc: "Full car in context of its setting, symmetrical framing if possible.", timer: "0:11–0:14" },
+    { title: "Closing detail shot", desc: "End on something specific — mirror reflection, logo, or taillight.", timer: "0:14–0:16" }
+  ],
+  "Drift / action": [
+    { title: "Cold open — tire close-up", desc: "Tight on the tire/wheel, silent beat before motion starts.", timer: "0:00–0:01" },
+    { title: "Smoke building shot", desc: "Wide shot as the car begins to slide, smoke starting to build behind it.", timer: "0:01–0:05" },
+    { title: "Low tracking shot, full slide", desc: "Camera tracks alongside at low angle as the car holds the drift through {location}.", timer: "0:05–0:09" },
+    { title: "Driver POV or in-car cut", desc: "Quick in-car shot of hands countersteering, adds intensity and context.", timer: "0:09–0:11" },
+    { title: "Smoke-through hero shot", desc: "Car exits smoke cloud into clear frame — your best slow-motion moment goes here.", timer: "0:11–0:14" },
+    { title: "Final static frame", desc: "Car stopped, smoke clearing around it, hard cut to black.", timer: "0:14–0:16" }
+  ],
+  "Sunset cruise": [
+    { title: "Cold open — sun flare through window", desc: "Shoot into the sunset through the windshield or window for natural flare.", timer: "0:00–0:02" },
+    { title: "Silhouette wide shot", desc: "Car as a silhouette against the sunset at {location}, let the sky do the work.", timer: "0:02–0:06" },
+    { title: "Side tracking shot, golden light", desc: "Tracking alongside the car as warm light hits the body panels.", timer: "0:06–0:10" },
+    { title: "Detail shot in golden light", desc: "Wheel, badge, or mirror catching the sunset glow.", timer: "0:10–0:12" },
+    { title: "Hero shot facing sun", desc: "Car facing into the light, lens flare embraced, this is your standout frame.", timer: "0:12–0:15" },
+    { title: "Fade to dusk", desc: "Final shot as light fades, transition to taillights or a dark frame.", timer: "0:15–0:16" }
+  ]
+};
+
+function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+function fill(str, car, location){
+  return str.replaceAll('{car}', car).replaceAll('{location}', location);
+}
+
+let copyResetTimers = {};
+
+function copyToClipboard(text, btnEl, id){
+  navigator.clipboard.writeText(text).then(() => {
+    btnEl.textContent = 'Copied';
+    btnEl.classList.add('copied');
+    clearTimeout(copyResetTimers[id]);
+    copyResetTimers[id] = setTimeout(() => {
+      btnEl.textContent = 'Copy';
+      btnEl.classList.remove('copied');
+    }, 1500);
+  });
+}
+
+function generate(){
+  const car = document.getElementById('car').value.trim() || 'this car';
+  const location = document.getElementById('location').value.trim() || 'the street';
+  const vibe = getActive(vibeChips);
+  const genre = getActive(genreChips);
+  const notes = document.getElementById('notes').value.trim();
+
+  const btn = document.getElementById('genBtn');
+  const output = document.getElementById('output');
+
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  output.innerHTML = `<div class="placeholder"><div class="gauge spin"></div><div>Building your Reel kit...</div></div>`;
+
+  setTimeout(() => {
+    // Caption
+    const captionRaw = pick(captionTemplates[vibe]);
+    let caption = fill(captionRaw, car, location);
+    if(notes){ caption += `\n\n(${notes})`; }
+
+    // Hashtags
+    let tags = [...hashtagBank.base, ...hashtagBank[genre], ...hashtagBank[vibe]];
+    tags = [...new Set(tags)].slice(0, 12);
+
+    // Shot list
+    const shots = shotTemplates[vibe].map(s => ({
+      title: s.title,
+      desc: fill(s.desc, car, location),
+      timer: s.timer
+    }));
+
+    output.innerHTML = `
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Caption</div>
+          <button class="copy-btn" onclick="copyToClipboard(${JSON.stringify(caption)}, this, 'cap')">Copy</button>
+        </div>
+        <div class="caption-text">${caption.replace(/\n/g,'<br>')}</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Hashtags</div>
+          <button class="copy-btn" onclick="copyToClipboard(${JSON.stringify(tags.join(' '))}, this, 'tags')">Copy all</button>
+        </div>
+        <div class="hashtag-list">${tags.map(t => `<span>${t}</span>`).join('')}</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Shot list — ~15 sec structure</div>
+        </div>
+        <ul class="shotlist">
+          ${shots.map(s => `<li><b>${s.title}</b> <span class="shot-timer">(${s.timer})</span><br>${s.desc}</li>`).join('')}
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Audio direction</div>
+        </div>
+        <div class="sound-tag">Lean into <b>${genre}</b> — search Reels audio for trending tracks tagged ${genre.toLowerCase()} this week, and time your hero shot (see shot list above) to land on the beat drop.</div>
+      </div>
+    `;
+
+    btn.disabled = false;
+    btn.textContent = 'Generate';
+  }, 700);
+}
+</script>
+</body>
+</html>
